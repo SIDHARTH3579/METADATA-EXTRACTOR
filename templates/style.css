@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  height:100vh; font-family:'Orbitron',sans-serif; color:#fff;
+  background:radial-gradient(circle at center,#060b10 0%,#000 100%);
+  display:flex; flex-direction:column; align-items:center; padding:20px;
+  overflow-x:hidden;
+}
+
+/* Animated background */
+.background {
+  position:fixed; top:0; left:0; width:200%; height:200%;
+  background:linear-gradient(120deg,#00ffff,#ff00ff,#00ff99,#0066ff);
+  background-size:400% 400%; animation:moveBackground 20s ease infinite;
+  filter:blur(120px); opacity:0.3; z-index:-1;
+}
+@keyframes moveBackground {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+/* Glass card UI */
+.glass-card {
+  background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+  backdrop-filter:blur(20px); padding:30px; border-radius:16px;
+  width:400px; text-align:center; box-shadow:0 0 25px rgba(0,255,255,0.3);
+  animation:fadeIn 1.5s ease; margin-bottom:20px;
+}
+.logo {
+  font-size:2.5em; margin-bottom:10px; background:linear-gradient(90deg,#00ffff,#ff00ff);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  color:transparent;
+}
+.tagline { color:#aaa; font-size:1em; margin-bottom:20px; }
+
+input[type="file"] { width:100%; margin:10px 0; background:rgba(0,0,0,0.3);
+border:1px dashed #00ffff; color:#fff; padding:8px; border-radius:8px; }
+
+.action-btn { width:100%; margin-top:10px; padding:10px; border:none;
+border-radius:8px; font-size:1em; font-weight:700; cursor:pointer; color:#fff; }
+.glow-blue { background:#00ffff; box-shadow:0 0 10px #00ffff,0 0 30px #00ffff; }
+.glow-blue:hover{background:#0099ff;}
+.glow-pink{background:#ff00ff; box-shadow:0 0 10px #ff00ff,0 0 30px #ff00ff;}
+.glow-pink:hover{background:#cc00cc;}
+
+.progress-download-container { display:flex; flex-direction:column; gap:10px; margin-top:15px; }
+.progress-container { width:100%; text-align:center; }
+.progress-bar { width:100%; height:25px; background:rgba(0,255,255,0.1); border-radius:5px; overflow:hidden; margin-bottom:5px; }
+.progress-bar-fill { width:0%; height:100%; background:linear-gradient(90deg,#00ffff,#0088ff); transition:width 0.2s ease;
+box-shadow:0 0 8px #00ffff; display:flex; align-items:center; justify-content:center; color:#000; font-weight:bold; font-size:0.8em; border-radius:5px;}
+
+#metadataBox {
+  width:90vw; max-width:1200px; height:250px; margin-top:10px;
+  overflow-x:auto; overflow-y:auto; white-space:pre; word-wrap:normal;
+  background:rgba(0,255,255,0.05); border:1px solid rgba(0,255,255,0.3);
+  border-radius:10px; padding:15px; font-family:Consolas,monospace; font-size:0.85em;
+  box-shadow:0 0 15px rgba(0,255,255,0.2);
+}
+
+@keyframes fadeIn { from{opacity:0; transform:scale(0.9);} to{opacity:1; transform:scale(1);} }
+.hidden{display:none!important;}

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Metadata Extractor & Cleaner</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/exifr/dist/lite.umd.js"></script>
+</head>
+<body>
+
+<div class="background"></div>
+
+<div class="glass-card">
+    <div class="logo">MetaHack</div>
+    <div class="tagline">Extract & Clean Metadata</div>
+
+    <input type="file" id="fileInput">
+    
+    <button id="extractBtn" class="action-btn glow-blue">Extract Metadata</button>
+    <button id="removeBtn" class="action-btn glow-pink">Remove Metadata</button>
+
+    <div class="progress-download-container">
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div id="progressBar" class="progress-bar-fill">
+                    <span id="progressText">0%</span>
+                </div>
+            </div>
+        </div>
+        <a id="downloadBtn" class="action-btn glow-blue hidden" href="#" download>Download Clean File</a>
+    </div>
+</div>
+
+<!-- Full-width terminal-like output box -->
+<pre id="metadataBox"></pre>
+
+<script>
+const extractBtn = document.getElementById('extractBtn');
+const removeBtn = document.getElementById('removeBtn');
+const fileInput = document.getElementById('fileInput');
+const outputArea = document.getElementById('metadataBox');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const downloadBtn = document.getElementById('downloadBtn');
+
+// Terminal scan effect
+function terminalScanEffect(text, container, callback) {
+    let i = 0;
+    const interval = setInterval(() => {
+        container.innerHTML += text[i];
+        container.scrollLeft = container.scrollWidth; // horizontal scroll
+        container.scrollTop = container.scrollHeight;  // vertical scroll
+        i++;
+        if (i >= text.length) {
+            clearInterval(interval);
+            if (callback) callback();
+        }
+    }, 15);
+}
+
+// Format GPS
+function formatLatLon(lat, lon) {
+    if (lat == null || lon == null) return 'N/A';
+    return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+}
+
+// Reverse geocode using Nominatim
+async function reverseGeocode(lat, lon) {
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+        if (!res.ok) throw new Error('Reverse geocode failed');
+        const data = await res.json();
+        return data.display_name || 'Unknown location';
+    } catch {
+        return 'Unknown location';
+    }
+}
+
+// Extract metadata
+async function extractMetadata(file) {
+    outputArea.innerHTML = '';
+    progressBar.style.width = '0%';
+    progressText.innerText = '0%';
+    downloadBtn.classList.add('hidden');
+
+    const isImage = file.type.startsWith('image/');
+    const isAudio = file.type.startsWith('audio/');
+
+    let metadataFields = [
+        { label: 'File Name', value: file.name },
+        { label: 'Size', value: `${file.size} bytes` },
+        { label: 'Type', value: file.type || 'N/A' },
+        { label: 'Last Modified', value: new Date(file.lastModified).toLocaleString() }
+    ];
+
+    let exif = {};
+    let gps = null;
+
+    if (isImage) {
+        try {
+            exif = await window.exifr.parse(file, { tiff:true, ifd0:true, exif:true, gps:true });
+            if (exif) {
+                for (let key in exif) metadataFields.push({ label: key, value: exif[key] });
+                if (exif.latitude !== undefined && exif.longitude !== undefined) {
+                    gps = { lat: exif.latitude, lon: exif.longitude };
+                    metadataFields.push({ label: 'GPS Coordinates', value: formatLatLon(gps.lat, gps.lon) });
+                    metadataFields.push({ label: 'Location', value: 'Fetching...' });
+                }
+            }
+        } catch {}
+    }
+
+    if (isAudio) {
+        metadataFields.push({ label: 'Audio File', value: 'Metadata read limited in-browser' });
+    }
+
+    const totalFields = metadataFields.length;
+    for (let i = 0; i < totalFields; i++) {
+        const field = metadataFields[i];
+        await new Promise(resolve => terminalScanEffect(`${field.label}: ${field.value}\n`, outputArea, resolve));
+        const progress = Math.round(((i+1)/totalFields)*100);
+        progressBar.style.width = `${progress}%`;
+        progressText.innerText = `${progress}%`;
+        await new Promise(r=>setTimeout(r,30));
+    }
+
+    if (gps) {
+        const locationName = await reverseGeocode(gps.lat, gps.lon);
+        outputArea.innerHTML = outputArea.innerHTML.replace('Location: Fetching...', `Location: ${locationName}`);
+    }
+}
+
+// Clean metadata
+async function cleanMetadata(file) {
+    outputArea.innerHTML = '';
+    progressBar.style.width = '0%';
+    progressText.innerText = '0%';
+    downloadBtn.classList.add('hidden');
+
+    const isImage = file.type.startsWith('image/');
+    const isAudio = file.type.startsWith('audio/');
+
+    const steps = ['Scanning file...', 'Removing metadata...', 'Finalizing...'];
+    for (let i = 0; i < steps.length; i++) {
+        terminalScanEffect(steps[i]+'\n', outputArea);
+        const progress = Math.round(((i+1)/steps.length)*100);
+        progressBar.style.width = `${progress}%`;
+        progressText.innerText = `${progress}%`;
+        await new Promise(r=>setTimeout(r,400));
+    }
+
+    let cleanedBlob;
+    if (isImage) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        await new Promise(resolve => {
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img,0,0);
+                canvas.toBlob(blob=>{
+                    cleanedBlob=blob;
+                    resolve();
+                },file.type);
+            };
+        });
+    } else {
+        cleanedBlob = file; // Audio/others: pass through
+    }
+
+    terminalScanEffect('Metadata removed successfully!\n', outputArea);
+
+    const url = URL.createObjectURL(cleanedBlob);
+    downloadBtn.href = url;
+    downloadBtn.download = `cleaned_${file.name}`;
+    downloadBtn.classList.remove('hidden');
+}
+
+// Event listeners
+extractBtn.addEventListener('click', async ()=>{
+    if(!fileInput.files.length) return alert('Select a file first!');
+    await extractMetadata(fileInput.files[0]);
+});
+
+removeBtn.addEventListener('click', async ()=>{
+    if(!fileInput.files.length) return alert('Select a file first!');
+    await cleanMetadata(fileInput.files[0]);
+});
+</script>
+</body>
+</html>
